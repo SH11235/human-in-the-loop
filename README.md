@@ -65,12 +65,14 @@ For Claude Code (claude.ai/code), add to your MCP settings:
 
 ```json
 {
-  "human-in-the-loop": {
-    "command": "human-in-the-loop",
-    "args": [
-      "--discord-channel-id", "channel-id",
-      "--discord-user-id", "user-id"
-    ]
+  "mcpServers": {
+    "human-in-the-loop": {
+      "command": "human-in-the-loop",
+      "args": [
+        "--discord-channel-id", "channel-id",
+        "--discord-user-id", "user-id"
+      ]
+    }
   }
 }
 ```
