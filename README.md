@@ -29,6 +29,8 @@ This MCP server is used when AI assistants need human input or judgment during t
    - Send Messages
    - Create Public Threads
    - Read Message History
+5. Enable privileged gateway intents in Bot section:
+   - Message Content Intent
 
 ### 2. Install
 
