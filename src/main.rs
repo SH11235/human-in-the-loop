@@ -30,10 +30,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let handler = tools::HumanInTheLoop::new(human);
     let transport = (stdin(), stdout());
-    let mcp = serve_server(handler, transport);
+    let mcp = serve_server(handler, transport).await?;
 
     tokio::select! {
-        res = mcp => {
+        res = mcp.waiting() => {
             res?;
         },
         res = discord => {
