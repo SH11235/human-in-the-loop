@@ -1313,7 +1313,7 @@ dependencies = [
 [[package]]
 name = "rmcp"
 version = "0.1.5"
-source = "git+https://github.com/modelcontextprotocol/rust-sdk?branch=main#b9d7d61ebd6e8385cbc4aa105d4e25774fc1a59c"
+source = "git+https://github.com/modelcontextprotocol/rust-sdk?rev=b9d7d61ebd6e8385cbc4aa105d4e25774fc1a59c#b9d7d61ebd6e8385cbc4aa105d4e25774fc1a59c"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -1333,7 +1333,7 @@ dependencies = [
 [[package]]
 name = "rmcp-macros"
 version = "0.1.5"
-source = "git+https://github.com/modelcontextprotocol/rust-sdk?branch=main#b9d7d61ebd6e8385cbc4aa105d4e25774fc1a59c"
+source = "git+https://github.com/modelcontextprotocol/rust-sdk?rev=b9d7d61ebd6e8385cbc4aa105d4e25774fc1a59c#b9d7d61ebd6e8385cbc4aa105d4e25774fc1a59c"
 dependencies = [
  "darling",
  "proc-macro2",
