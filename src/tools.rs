@@ -19,6 +19,9 @@ pub struct HumanInTheLoop<H> {
 
 #[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AskHumanRequest {
+    #[schemars(
+        description = "The question to ask the human. Be specific and provide context to help the human understand what information you need."
+    )]
     question: String,
 }
 
