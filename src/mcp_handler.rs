@@ -1,8 +1,8 @@
-use rust_mcp_sdk::schema::{
-    schema_utils::CallToolError, CallToolRequest, CallToolResult, ListToolsRequest,
-    ListToolsResult, RpcError,
+use rmcp::{ServerHandler, RoleServer, Error as McpError};
+use rmcp::model::{
+    CallToolRequestParam, CallToolResult, ListToolsResult, PaginatedRequestParam,
 };
-use rust_mcp_sdk::{mcp_server::ServerHandler, McpServer};
+use rmcp::service::RequestContext;
 
 use crate::tools::{Human, HumanTools};
 
@@ -16,31 +16,35 @@ impl<H: Human> Handler<H> {
     }
 }
 
-#[async_trait::async_trait]
-#[allow(unused)]
 impl<H: Human> ServerHandler for Handler<H> {
-    async fn handle_list_tools_request(
+    fn list_tools(
         &self,
-        request: ListToolsRequest,
-        runtime: &dyn McpServer,
-    ) -> Result<ListToolsResult, RpcError> {
-        Ok(ListToolsResult {
-            meta: None,
-            next_cursor: None,
-            tools: HumanTools::tools(),
-        })
+        _request: Option<PaginatedRequestParam>,
+        _context: RequestContext<RoleServer>,
+    ) -> impl std::future::Future<Output = Result<ListToolsResult, McpError>> + Send + '_ {
+        async move {
+            Ok(ListToolsResult {
+                tools: HumanTools::tools(),
+                next_cursor: None,
+            })
+        }
     }
 
-    async fn handle_call_tool_request(
+    fn call_tool(
         &self,
-        request: CallToolRequest,
-        runtime: &dyn McpServer,
-    ) -> Result<CallToolResult, CallToolError> {
-        let tool_params: HumanTools =
-            HumanTools::try_from(request.params).map_err(CallToolError::new)?;
+        request: CallToolRequestParam,
+        _context: RequestContext<RoleServer>,
+    ) -> impl std::future::Future<Output = Result<CallToolResult, McpError>> + Send + '_ {
+        async move {
+            let tool_params: HumanTools =
+                HumanTools::try_from(request).map_err(|e| McpError::internal_error(e.to_string(), None))?;
 
-        match tool_params {
-            HumanTools::AskHumanTool(ask_human_tool) => ask_human_tool.call_tool(&self.human).await,
+            match tool_params {
+                HumanTools::AskHumanTool(ask_human_tool) => {
+                    ask_human_tool.call_tool(&self.human).await
+                        .map_err(|e| McpError::internal_error(e.to_string(), None))
+                }
+            }
         }
     }
 }
