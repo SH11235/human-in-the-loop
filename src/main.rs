@@ -15,6 +15,12 @@ struct Args {
     discord_channel_id: ChannelId,
     #[clap(long, env = "DISCORD_USER_ID")]
     discord_user_id: UserId,
+    #[clap(long, env = "ENABLE_CONVERSATION_LOG")]
+    enable_conversation_log: bool,
+    #[clap(long, env = "LOG_CHANNEL_ID")]
+    log_channel_id: Option<ChannelId>,
+    #[clap(long, env = "LOG_THREAD_NAME", default_value = "Conversation Log")]
+    log_thread_name: String,
 }
 
 #[tokio::main]
@@ -23,9 +29,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         discord_token,
         discord_channel_id,
         discord_user_id,
+        enable_conversation_log,
+        log_channel_id,
+        log_thread_name,
     } = Args::parse();
 
-    let human = HumanInDiscord::new(discord_user_id, discord_channel_id);
+    let human = HumanInDiscord::new(
+        discord_user_id,
+        discord_channel_id,
+        enable_conversation_log,
+        log_channel_id,
+        log_thread_name,
+    );
     let discord = discord::start(&discord_token, human.handler().clone());
 
     let handler = tools::HumanInTheLoop::new(human);

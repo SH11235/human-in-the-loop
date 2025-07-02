@@ -2,8 +2,8 @@ use std::sync::{Arc, OnceLock};
 
 use serenity::{
     all::{
-        AutoArchiveDuration, ChannelId, ChannelType, Context, CreateMessage, CreateThread,
-        EventHandler, GatewayIntents, Ready, UserId,
+        AutoArchiveDuration, ChannelId, ChannelType, Context, CreateEmbed, CreateMessage,
+        CreateThread, EventHandler, GatewayIntents, Ready, UserId,
     },
     Client,
 };
@@ -44,15 +44,29 @@ pub struct HumanInDiscord {
     channel_id: ChannelId,
     handler: Handler,
     thread: OnceCell<ChannelId>,
+    enable_conversation_log: bool,
+    log_channel_id: Option<ChannelId>,
+    log_thread_name: String,
+    log_thread: OnceCell<ChannelId>,
 }
 
 impl HumanInDiscord {
-    pub fn new(user_id: UserId, channel_id: ChannelId) -> Self {
+    pub fn new(
+        user_id: UserId,
+        channel_id: ChannelId,
+        enable_conversation_log: bool,
+        log_channel_id: Option<ChannelId>,
+        log_thread_name: String,
+    ) -> Self {
         Self {
             user_id,
             channel_id,
             handler: Handler::default(),
             thread: OnceCell::new(),
+            enable_conversation_log,
+            log_channel_id,
+            log_thread_name,
+            log_thread: OnceCell::new(),
         }
     }
 
@@ -95,5 +109,64 @@ impl Human for HumanInDiscord {
             .await
             .ok_or_else(|| anyhow::anyhow!("Failed to await message from the human in Discord"))?;
         Ok(message.content)
+    }
+
+    async fn log_conversation(
+        &self,
+        role: &str,
+        message: &str,
+        context: Option<&str>,
+    ) -> anyhow::Result<()> {
+        if !self.enable_conversation_log {
+            return Ok(());
+        }
+
+        let log_channel_id = self
+            .log_channel_id
+            .ok_or_else(|| anyhow::anyhow!("Log channel ID not configured"))?;
+
+        let ctx = self
+            .handler
+            .ctx
+            .get()
+            .ok_or_else(|| anyhow::anyhow!("The connection with Discord is not ready"))?;
+
+        let log_thread = self
+            .log_thread
+            .get_or_try_init(|| async {
+                let thread = log_channel_id
+                    .create_thread(
+                        &ctx.http,
+                        CreateThread::new(&self.log_thread_name)
+                            .auto_archive_duration(AutoArchiveDuration::OneWeek)
+                            .kind(ChannelType::PublicThread),
+                    )
+                    .await?;
+                anyhow::Ok(thread.id)
+            })
+            .await?;
+
+        let color = match role {
+            "human" => 0x3498db,     // Blue
+            "assistant" => 0x2ecc71, // Green
+            "system" => 0x95a5a6,    // Gray
+            _ => 0x7f8c8d,           // Default gray
+        };
+
+        let mut embed = CreateEmbed::new()
+            .title(format!("💬 {}", role.to_uppercase()))
+            .description(message)
+            .color(color)
+            .timestamp(serenity::all::Timestamp::now());
+
+        if let Some(ctx_info) = context {
+            embed = embed.footer(serenity::all::CreateEmbedFooter::new(ctx_info));
+        }
+
+        log_thread
+            .send_message(&ctx.http, CreateMessage::new().embed(embed))
+            .await?;
+
+        Ok(())
     }
 }

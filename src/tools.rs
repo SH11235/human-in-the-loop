@@ -10,6 +10,12 @@ use std::future::Future;
 #[async_trait::async_trait]
 pub trait Human: Send + Sync + 'static {
     async fn ask(&self, question: &str) -> anyhow::Result<String>;
+    async fn log_conversation(
+        &self,
+        role: &str,
+        message: &str,
+        context: Option<&str>,
+    ) -> anyhow::Result<()>;
 }
 
 pub struct HumanInTheLoop<H> {
@@ -23,6 +29,16 @@ pub struct AskHumanRequest {
         description = "The question to ask the human. Be specific and provide context to help the human understand what information you need. Ask the only one question at once."
     )]
     question: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
+pub struct LogConversationRequest {
+    #[schemars(description = "The role of the message sender: 'human', 'assistant', or 'system'")]
+    role: String,
+    #[schemars(description = "The message content to log")]
+    message: String,
+    #[schemars(description = "Optional context or metadata about the message")]
+    context: Option<String>,
 }
 
 #[tool_router]
@@ -49,6 +65,24 @@ where
             .await
             .map_err(|e| rmcp::Error::internal_error(e.to_string(), None))
     }
+
+    #[tool(
+        description = "Log conversation messages to Discord for review and history tracking. Use this to record important interactions, decisions, or context that should be preserved"
+    )]
+    async fn log_conversation(
+        &self,
+        Parameters(LogConversationRequest {
+            role,
+            message,
+            context,
+        }): Parameters<LogConversationRequest>,
+    ) -> Result<String, rmcp::Error> {
+        self.human
+            .log_conversation(&role, &message, context.as_deref())
+            .await
+            .map_err(|e| rmcp::Error::internal_error(e.to_string(), None))?;
+        Ok("Message logged successfully".to_string())
+    }
 }
 
 #[tool_handler]
@@ -64,7 +98,15 @@ where
              information that only a human would know, such as: personal preferences, \
              project-specific context, local environment details, or any information that \
              is not publicly available or documented. The human will be notified in Discord \
-             and their response will be returned to you."
+             and their response will be returned to you. \
+             \
+             IMPORTANT: Please proactively use the 'log_conversation' tool to maintain a record of: \
+             1. User requests and requirements (role='human') \
+             2. Your responses and implementations (role='assistant') \
+             3. Important decisions or milestones \
+             4. Errors or issues encountered (role='system') \
+             This helps maintain project history and enables better collaboration. \
+             Logged messages will be formatted with role indicators and timestamps in a dedicated thread."
                     .to_string(),
             ),
             capabilities: ServerCapabilities::builder().enable_tools().build(),

@@ -100,6 +100,50 @@ Assistant: I'll create a documentation outline. Let me ask you some questions fi
 
 The AI posts questions in Discord and mentions the specified user. When the user replies in Discord, the response is returned to the AI.
 
+#### Conversation Logging
+
+The server now supports logging conversations to Discord for review and history tracking. To enable this feature:
+
+1. Add the following arguments to your configuration:
+   - `--enable-conversation-log` - Enable conversation logging
+   - `--log-channel-id` - Discord channel ID for logs (can be same or different from main channel)
+   - `--log-thread-name` - Thread name for logs (default: "Conversation Log")
+
+Example configuration with logging enabled:
+
+```json
+{
+  "mcpServers": {
+    "human-in-the-loop": {
+      "command": "human-in-the-loop",
+      "args": [
+        "--discord-channel-id", "channel-id",
+        "--discord-user-id", "user-id",
+        "--enable-conversation-log",
+        "--log-channel-id", "log-channel-id",
+        "--log-thread-name", "AI Assistant Conversation Log"
+      ],
+      "env": {
+        "DISCORD_TOKEN": "your-discord-bot-token"
+      }
+    }
+  }
+}
+```
+
+AI assistants can use the `log_conversation` tool to record important interactions:
+
+```
+[AI uses log_conversation tool with role="assistant", message="Starting documentation process"]
+[AI uses log_conversation tool with role="human", message="User's response about requirements"]
+```
+
+Logged messages appear in Discord with:
+- Color-coded embeds (blue for human, green for assistant, gray for system)
+- Timestamps
+- Optional context information
+- Organized in a dedicated thread for easy review
+
 ## How It Works
 
 1. AI assistant calls the `ask_human` tool
