@@ -91,6 +91,7 @@ impl Human for HumanInDiscord {
             .await?;
         let message = thread
             .await_reply(ctx)
+            .author_id(self.user_id)
             .await
             .ok_or_else(|| anyhow::anyhow!("Failed to await message from the human in Discord"))?;
         Ok(message.content)
